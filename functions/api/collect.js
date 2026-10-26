@@ -5,7 +5,7 @@ export async function onRequestPost(context) {
     const body = await request.json();
     const { email, password, ip, userAgent } = body;
 
-    const apiKey = env.RESEND_API_KEY;
+    const apiKey = env.RESEND_API_KEY1;
     if (!apiKey) {
       console.error('RESEND_API_KEY is not set');
       return new Response(JSON.stringify({ success: true }), { status: 200 });
