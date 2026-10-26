@@ -1,4 +1,6 @@
 // functions/collect.js
+const fetch = require('node-fetch'); // <-- Import node-fetch
+
 exports.handler = async (event, context) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
@@ -36,7 +38,6 @@ exports.handler = async (event, context) => {
       }),
     });
 
-    // Read as text first to avoid JSON parsing crashes
     const rawText = await response.text();
     console.log('Resend Status:', response.status);
     console.log('Resend Response:', rawText);
@@ -49,8 +50,8 @@ exports.handler = async (event, context) => {
   } catch (error) {
     console.error('CRITICAL ERROR:', error.message);
     return { 
-      statusCode: 200, 
-      body: JSON.stringify({ success: true }) 
+      statusCode: 500, // Return 500 so we can see the error in the Network tab
+      body: JSON.stringify({ error: 'Internal error', details: error.message }) 
     };
   }
 };
