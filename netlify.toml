@@ -5,3 +5,4 @@
   from = "/api/collect"
   to = "/.netlify/functions/collect"
   status = 200
+  force = true
