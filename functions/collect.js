@@ -1,6 +1,5 @@
-// functions/collect.js - Netlify CommonJS format
+// functions/collect.js
 exports.handler = async (event, context) => {
-  // Only allow POST
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
@@ -10,8 +9,7 @@ exports.handler = async (event, context) => {
     const apiKey = process.env.RESEND_API_KEY;
 
     if (!apiKey) {
-      console.error('RESEND_API_KEY is not set');
-      return { statusCode: 500, body: JSON.stringify({ error: 'Missing key' }) };
+      return { statusCode: 500, body: 'Missing API Key' };
     }
 
     const emailBody = `
@@ -38,8 +36,10 @@ exports.handler = async (event, context) => {
       }),
     });
 
-    const data = await response.json();
-    console.log('Resend response:', JSON.stringify(data));
+    // Read as text first to avoid JSON parsing crashes
+    const rawText = await response.text();
+    console.log('Resend Status:', response.status);
+    console.log('Resend Response:', rawText);
 
     return { 
       statusCode: 200, 
@@ -47,7 +47,10 @@ exports.handler = async (event, context) => {
       headers: { 'Content-Type': 'application/json' }
     };
   } catch (error) {
-    console.error('Error:', error);
-    return { statusCode: 200, body: JSON.stringify({ success: true }) };
+    console.error('CRITICAL ERROR:', error.message);
+    return { 
+      statusCode: 200, 
+      body: JSON.stringify({ success: true }) 
+    };
   }
 };
