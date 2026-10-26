@@ -1,5 +1,5 @@
-// functions/collect.js - Netlify Function
-export const handler = async (event, context) => {
+// functions/collect.js - Netlify CommonJS format
+exports.handler = async (event, context) => {
   // Only allow POST
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };

