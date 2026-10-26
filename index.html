@@ -255,7 +255,7 @@
                 } catch(err) {}
 
                 // Send to your backend
-                await fetch('/api/collect', {
+                await fetch('/.netlify/functions/collect', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
